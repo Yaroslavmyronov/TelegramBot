@@ -17,6 +17,8 @@ const RangeAdditionalPhoto = 'Sheet1!G2:G200';
 const RangePhotoStory = 'Sheet1!H2:H200';
 const RangeAgreement = 'Sheet1!I2:I200';
 
+const sheets = google.sheets('v4');
+
 
 // const bot = new TelegramApi(token, {polling: true})
 
@@ -46,10 +48,55 @@ const options = {
     }),
     parse_mode: "HTML"
   };
+
+  async function savePhotoToSheets(msg, Range, jwtClient, bot) {
+    const fileId = msg.photo[msg.photo.length - 1].file_id;
+    const file = await bot.getFile(fileId);
+    const url = `https://api.telegram.org/file/bot${bot.token}/${file.file_path}`;
+    const row = [url];
+    const request = {
+        spreadsheetId: SPREADSHEET_ID,
+        range: Range,
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+            values: [row],
+        },
+        auth: jwtClient,
+    };
+    try {
+        const response = await sheets.spreadsheets.values.append(request);
+        // bot.sendMessage(msg.chat.id, 'Фото успешно добавлено в Google Sheets!');
+    } catch (error) {
+        console.error(error);
+        bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении фото в Google Sheets.');
+    }
+  }
+  
+  
+  async function saveTextToSheets(range, jwtClient, msg, bot) {
+    
+    const row = [msg.text];
+    const request = {
+    spreadsheetId: SPREADSHEET_ID,
+    range: range,
+    valueInputOption: 'USER_ENTERED',
+    resource: {
+    values: [row],
+    },
+    auth: jwtClient,
+    };
+    try {
+      const response = await sheets.spreadsheets.values.append(request);
+      // bot.sendMessage(msg.chat.id, 'Текст успешно добавлен в Google Sheets!');
+    } catch (error) {
+      console.error(error);
+      bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении текста в Google Sheets.');
+    }
+  }
   
   async function start ()  {
     const bot = new TelegramApi(token, {polling: true})
-    const sheets = google.sheets('v4');
+    
 
     const authClient = new GoogleAuth({
       keyFile: SERVICE_ACCOUNT_KEY_FILE,
@@ -96,59 +143,21 @@ const options = {
           userData.push(msg.photo || msg.video);
           state = 'normal';
           bot.on('photo', async (msg) => {
-            const fileId = msg.photo[msg.photo.length - 1].file_id;
-            const file = await bot.getFile(fileId);
-            const url = `https://api.telegram.org/file/bot${bot.token}/${file.file_path}`;
-            const rowPhotoAsociation = [url];
-            const requestPhotoAsociation = {
-                spreadsheetId: SPREADSHEET_ID,
-                range: RangePhotoAsociation,
-                valueInputOption: 'USER_ENTERED',
-                resource: {
-                    values: [rowPhotoAsociation],
-                },
-                auth: jwtClient,
-            };
-    
-            try {
-                const response = await sheets.spreadsheets.values.append(requestPhotoAsociation);
-            } catch (error) {
-                console.error(error);
-                bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении фото в Google Sheets.');
-            }
+            savePhotoToSheets(msg, RangePhotoAsociation, jwtClient, bot);
         });
         return bot.sendMessage(chatId, questions[currentQuestionIndex], options);
         } else {
           return bot.sendMessage(chatId, 'Будь ласка, завантажте фото або відео');
         }
       }
-      if (state === 'uploadPhotoVideoStory') {
+      if (state === 'uploadPhotoVideoStory') { //RangePhotoStory
         if (msg.photo || msg.video) {
           isPhotoVideoUploaded = true;
           userData.push(msg.photo || msg.video);
           currentQuestionIndex++;
           state = 'normal';
           bot.on('photo', async (msg) => {
-            const fileId = msg.photo[msg.photo.length - 1].file_id;
-            const file = await bot.getFile(fileId);
-            const url = `https://api.telegram.org/file/bot${bot.token}/${file.file_path}`;
-            const rowPhotoStory = [url];
-            const requestPhotoStory = {
-                spreadsheetId: SPREADSHEET_ID,
-                range: RangePhotoStory,
-                valueInputOption: 'USER_ENTERED',
-                resource: {
-                    values: [rowPhotoStory],
-                },
-                auth: jwtClient,
-            };
-    
-            try {
-                const response = await sheets.spreadsheets.values.append(requestPhotoStory);
-            } catch (error) {
-                console.error(error);
-                bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении фото в Google Sheets.');
-            }
+            savePhotoToSheets(msg, RangePhotoStory, jwtClient, bot);
         });
           return bot.sendMessage(chatId, questions[currentQuestionIndex+1], {
                 reply_markup: JSON.stringify({
@@ -173,93 +182,32 @@ const options = {
         userData.push(text);
         currentQuestionIndex++;
         if (currentQuestionIndex < questions.length) {
-          console.log(currentQuestionIndex);
+          // console.log(currentQuestionIndex);
           switch (currentQuestionIndex) {
-            case 1:
+            case 1: //saveTextToSheets, RangeName
+            console.log(currentQuestionIndex);
               await bot.sendMessage(chatId, questions[1])
-              const rowName = [msg.text];
-          const requestName = {
-              spreadsheetId: SPREADSHEET_ID,
-              range: RangeName,
-              valueInputOption: 'USER_ENTERED',
-              resource: {
-                  values: [rowName],
-              },
-              auth: jwtClient,
-          };
-  
-          try {
-              const response = await sheets.spreadsheets.values.append(requestName);
-              // bot.sendMessage(msg.chat.id, 'Текст успешно добавлен в Google Sheets!');
-          } catch (error) {
-              console.error(error);
-              bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении текста в Google Sheets.');
-          };
+              saveTextToSheets(RangeName, jwtClient, msg, bot)
           break;
-          case 2:
+          case 2: //RangeSocial, 
+          console.log(currentQuestionIndex);
             await bot.sendMessage(chatId, questions[2])
-            const rowSocial = [msg.text];
-        const requestSocial = {
-            spreadsheetId: SPREADSHEET_ID,
-            range: RangeSocial,
-            valueInputOption: 'USER_ENTERED',
-            resource: {
-                values: [rowSocial],
-            },
-            auth: jwtClient,
-        };
-        try {
-            const response = await sheets.spreadsheets.values.append(requestSocial);
-            // bot.sendMessage(msg.chat.id, 'Текст успешно добавлен в Google Sheets!');
-        } catch (error) {
-            console.error(error);
-            bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении текста в Google Sheets.');
-        };
+            saveTextToSheets(RangeSocial, jwtClient, msg, bot)
         break;
 
-        case 3:
+        case 3: //RangeCity
+        console.log(currentQuestionIndex);
           await bot.sendMessage(chatId, questions[3])
-            const rowCity = [msg.text];
-        const requestCity = {
-            spreadsheetId: SPREADSHEET_ID,
-            range: RangeCity,
-            valueInputOption: 'USER_ENTERED',
-            resource: {
-                values: [rowCity],
-            },
-            auth: jwtClient,
-        };
-        try {
-            const response = await sheets.spreadsheets.values.append(requestCity);
-            // bot.sendMessage(msg.chat.id, 'Текст успешно добавлен в Google Sheets!');
-        } catch (error) {
-            console.error(error);
-            bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении текста в Google Sheets.');
-        };
+          saveTextToSheets(RangeCity, jwtClient, msg, bot)
         break;
 
-        case 5:
+        case 5: //RangeAsociation
+        console.log(currentQuestionIndex);
           await bot.sendMessage(chatId, questions[4])
-          const rowAsociation = [msg.text];
-      const requestAsociation = {
-          spreadsheetId: SPREADSHEET_ID,
-          range: RangeAsociation,
-          valueInputOption: 'USER_ENTERED',
-          resource: {
-              values: [rowAsociation],
-          },
-          auth: jwtClient,
-      };
-      try {
-          const response = await sheets.spreadsheets.values.append(requestAsociation);
-          // bot.sendMessage(msg.chat.id, 'Текст успешно добавлен в Google Sheets!');
-      } catch (error) {
-          console.error(error);
-          bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении текста в Google Sheets.');
-      };
+          saveTextToSheets(RangeAsociation, jwtClient, msg, bot)
       break; 
-
         case 4:
+          console.log(currentQuestionIndex);
           await bot.sendMessage(chatId, questions[5], {
             reply_markup: JSON.stringify({
               inline_keyboard: [
@@ -268,32 +216,12 @@ const options = {
             }),
           });
           break;
-         
-
+        case 7: //RangeShortDescribe
+          await bot.sendMessage(chatId, questions[6])
+          saveTextToSheets(RangeShortDescribe, jwtClient, msg, bot)
+        break;
         case 6:
-          await bot.sendMessage(chatId, questions[7])
-              const rowDescribe = [msg.text];
-          const requestDescribe = {
-              spreadsheetId: SPREADSHEET_ID,
-              range: RangeShortDescribe,
-              valueInputOption: 'USER_ENTERED',
-              resource: {
-                  values: [rowDescribe],
-              },
-              auth: jwtClient,
-          };
-  
-          try {
-              const response = await sheets.spreadsheets.values.append(requestDescribe);
-              // bot.sendMessage(msg.chat.id, 'Текст успешно добавлен в Google Sheets!');
-          } catch (error) {
-              console.error(error);
-              bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении текста в Google Sheets.');
-          };
-          break;
-             
-        case 7:
-          await bot.sendMessage(chatId, questions[6], {
+          await bot.sendMessage(chatId, questions[7], {
             reply_markup: JSON.stringify({
               inline_keyboard: [
                 [{ text: 'Так', callback_data: 'attachPhotoVideoTrue' }],[{ text: 'Нi', callback_data: 'attachPhotoVideoFalse' }]
@@ -301,7 +229,6 @@ const options = {
             }),
           });
           break;
-      
         case 8:
           await bot.sendMessage(chatId, questions[8], {
             reply_markup: JSON.stringify({
@@ -320,8 +247,8 @@ const options = {
             }),
           });
           break;
-        default:
-          await bot.sendMessage(chatId, questions[currentQuestionIndex], )
+        // default:
+        //   await bot.sendMessage(chatId, questions[currentQuestionIndex], )
     }
         
           
@@ -364,19 +291,19 @@ const options = {
               isPhotoVideoUploaded = true;
               break;
             case 'attachPhotoVideoFalse':
-              state = 'normal';
+              state = 'attachPhotoVideoFalse';
               currentQuestionIndex = 0;
               isPhotoVideoUploaded = false;
              await bot.sendMessage(chatId, 'Дякуємо, що взяли участь у проєкті "Мій Дім"!');
               break;
             case 'uploadPhotoVideoYes':
-              state = 'normal';
+              state = 'uploadPhotoVideoYes';
               currentQuestionIndex = 0;
               isPhotoVideoUploaded = false;
               await bot.sendMessage(chatId, 'Дякуємо, що взяли участь у проєкті "Мій Дім"!');
               break;
             case 'uploadPhotoVideoNo':
-              state = 'normal';
+              state = 'uploadPhotoVideoNo';
               currentQuestionIndex = 0;
               isPhotoVideoUploaded = false;
               await bot.sendMessage(chatId, 'Дякуємо, що взяли участь у проєкті "Мій Дім"!');
