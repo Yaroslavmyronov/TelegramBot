@@ -116,7 +116,7 @@ const options = {
   
       if (text === '/start') {
         state = 'normal';
-        currentQuestionIndex = 0;
+        // currentQuestionIndex = 0;
         userData = [];
         return bot.sendMessage(
           chatId,
@@ -159,7 +159,7 @@ const options = {
           bot.on('photo', async (msg) => {
             savePhotoToSheets(msg, RangePhotoStory, jwtClient, bot);
         });
-          return bot.sendMessage(chatId, questions[currentQuestionIndex+1], {
+          return bot.sendMessage(chatId, questions[currentQuestionIndex], {
                 reply_markup: JSON.stringify({
                   inline_keyboard: [
                     [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
@@ -185,30 +185,31 @@ const options = {
           // console.log(currentQuestionIndex);
           switch (currentQuestionIndex) {
             case 1: //saveTextToSheets, RangeName
-            console.log(currentQuestionIndex);
+            console.log(`${currentQuestionIndex} 1`);
               await bot.sendMessage(chatId, questions[1])
               saveTextToSheets(RangeName, jwtClient, msg, bot)
           break;
           case 2: //RangeSocial, 
-          console.log(currentQuestionIndex);
+          console.log(`${currentQuestionIndex} 2`);
             await bot.sendMessage(chatId, questions[2])
             saveTextToSheets(RangeSocial, jwtClient, msg, bot)
         break;
 
         case 3: //RangeCity
-        console.log(currentQuestionIndex);
+        console.log(`${currentQuestionIndex} 3`);
           await bot.sendMessage(chatId, questions[3])
           saveTextToSheets(RangeCity, jwtClient, msg, bot)
         break;
 
-        case 5: //RangeAsociation
-        console.log(currentQuestionIndex);
-          await bot.sendMessage(chatId, questions[4])
-          saveTextToSheets(RangeAsociation, jwtClient, msg, bot)
-      break; 
-        case 4:
-          console.log(currentQuestionIndex);
-          await bot.sendMessage(chatId, questions[5], {
+        // case 5:
+        //   console.log(`${currentQuestionIndex} 5`);
+        //   await bot.sendMessage(chatId, questions[5])
+        //   saveTextToSheets(RangeAsociation, jwtClient, msg, bot)
+        // break; 
+
+          case 4: //RangeAsociation
+          console.log(`${currentQuestionIndex} 4`);
+          await bot.sendMessage(chatId, questions[4], {
             reply_markup: JSON.stringify({
               inline_keyboard: [
                 [{ text: 'Завантажте фото/відео', callback_data: 'uploadPhotoVideoHome' }],
@@ -216,12 +217,15 @@ const options = {
             }),
           });
           break;
-        case 7: //RangeShortDescribe
-          await bot.sendMessage(chatId, questions[6])
-          saveTextToSheets(RangeShortDescribe, jwtClient, msg, bot)
-        break;
+
+        // case 7: //RangeShortDescribe
+        //   console.log(`${currentQuestionIndex} 7`);
+        //   await bot.sendMessage(chatId, questions[9])
+        //   saveTextToSheets(RangeShortDescribe, jwtClient, msg, bot)
+        //   break;
         case 6:
-          await bot.sendMessage(chatId, questions[7], {
+        console.log(`${currentQuestionIndex} 6`);
+          await bot.sendMessage(chatId, questions[6], {
             reply_markup: JSON.stringify({
               inline_keyboard: [
                 [{ text: 'Так', callback_data: 'attachPhotoVideoTrue' }],[{ text: 'Нi', callback_data: 'attachPhotoVideoFalse' }]
@@ -229,26 +233,35 @@ const options = {
             }),
           });
           break;
-        case 8:
-          await bot.sendMessage(chatId, questions[8], {
+          
+        // case 8:
+        //   console.log(`${currentQuestionIndex} 8`);
+        //   await bot.sendMessage(chatId, questions[9], {
+        //     reply_markup: JSON.stringify({
+        //       inline_keyboard: [
+        //         [{ text: 'Завантажити', callback_data: 'uploadPhotoVideoStory' }],
+        //       ],
+        //     }),
+        //   });
+        //   break;
+        // case 9:
+        //   console.log(`${currentQuestionIndex} 9`);
+        //   await bot.sendMessage(chatId, questions[9], {
+        //     reply_markup: JSON.stringify({
+        //       inline_keyboard: [
+        //         [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
+        //       ],
+        //     }),
+        //   });
+        //   break;
+        default:
+          await bot.sendMessage(chatId, questions[currentQuestionIndex], {
             reply_markup: JSON.stringify({
               inline_keyboard: [
-                [{ text: 'Завантажити', callback_data: 'uploadPhotoVideoStory' }],
+                [{ text: 'Так', callback_data: 'attachPhotoVideoTrue' }],[{ text: 'Нi', callback_data: 'attachPhotoVideoFalse' }]
               ],
             }),
-          });
-          break;
-        case 9:
-          await bot.sendMessage(chatId, questions[9], {
-            reply_markup: JSON.stringify({
-              inline_keyboard: [
-                [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
-              ],
-            }),
-          });
-          break;
-        // default:
-        //   await bot.sendMessage(chatId, questions[currentQuestionIndex], )
+          })
     }
         
           
