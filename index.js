@@ -136,6 +136,10 @@ const options = {
         );
         
       }
+      
+
+     
+
       if (state === 'uploadPhotoVideoHome') {
         if (msg.photo || msg.video) {
           isPhotoVideoUploaded = true;
@@ -159,17 +163,17 @@ const options = {
           bot.on('photo', async (msg) => {
             savePhotoToSheets(msg, RangePhotoStory, jwtClient, bot);
         });
-          return bot.sendMessage(chatId, questions[currentQuestionIndex], {
-                reply_markup: JSON.stringify({
-                  inline_keyboard: [
-                    [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
-                  ],
-                }),
-              });
+          return bot.sendMessage(chatId, questions[currentQuestionIndex]);
         } else {
           return bot.sendMessage(chatId, 'Будь ласка, завантажте фото або відео', );
         }
   
+      }
+
+      if (state === 'falseMedia') {
+        state = 'normal';
+        bot.sendMessage(chatId, "Окей, поверніться до початку командою /start");
+      
       }
   
       if (state === 'normal') {
@@ -201,14 +205,8 @@ const options = {
           saveTextToSheets(RangeCity, jwtClient, msg, bot)
         break;
 
-        // case 5:
-        //   console.log(`${currentQuestionIndex} 5`);
-        //   await bot.sendMessage(chatId, questions[5])
-        //   saveTextToSheets(RangeAsociation, jwtClient, msg, bot)
-        // break; 
-
-          case 4: //RangeAsociation
-          console.log(`${currentQuestionIndex} 4`);
+        case 4: //RangeAsociation
+        console.log(`${currentQuestionIndex} 4`);
           await bot.sendMessage(chatId, questions[4], {
             reply_markup: JSON.stringify({
               inline_keyboard: [
@@ -216,7 +214,13 @@ const options = {
               ],
             }),
           });
+          saveTextToSheets(RangeAsociation, jwtClient, msg, bot)
           break;
+          case 5:
+          console.log(`${currentQuestionIndex} 5`);
+          await bot.sendMessage(chatId, questions[5])
+        
+        break; 
 
         // case 7: //RangeShortDescribe
         //   console.log(`${currentQuestionIndex} 7`);
@@ -228,43 +232,38 @@ const options = {
           await bot.sendMessage(chatId, questions[6], {
             reply_markup: JSON.stringify({
               inline_keyboard: [
-                [{ text: 'Так', callback_data: 'attachPhotoVideoTrue' }],[{ text: 'Нi', callback_data: 'attachPhotoVideoFalse' }]
+                [{ text: 'Так', callback_data: 'trueMedia' }],[{ text: 'Нi', callback_data: 'falseMedia' }]
               ],
             }),
           });
+          saveTextToSheets(RangeShortDescribe, jwtClient, msg, bot)
+          break;
+        case 7:
+          console.log(`${currentQuestionIndex} 8`);
+          await bot.sendMessage(chatId, questions[7], {
+                 reply_markup: JSON.stringify({
+                  inline_keyboard: [
+                    [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
+                  ],
+                }),
+              });
           break;
           
-        // case 8:
-        //   console.log(`${currentQuestionIndex} 8`);
-        //   await bot.sendMessage(chatId, questions[9], {
-        //     reply_markup: JSON.stringify({
-        //       inline_keyboard: [
-        //         [{ text: 'Завантажити', callback_data: 'uploadPhotoVideoStory' }],
-        //       ],
-        //     }),
-        //   });
-        //   break;
-        // case 9:
-        //   console.log(`${currentQuestionIndex} 9`);
-        //   await bot.sendMessage(chatId, questions[9], {
-        //     reply_markup: JSON.stringify({
-        //       inline_keyboard: [
-        //         [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
-        //       ],
-        //     }),
-        //   });
-        //   break;
+        case 8:
+          console.log(`${currentQuestionIndex} 8`);
+          await bot.sendMessage(chatId, questions[8], {
+                reply_markup: JSON.stringify({
+                  inline_keyboard: [
+                    [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
+                  ],
+                }),
+              });
+          break;
+       
         default:
-          await bot.sendMessage(chatId, questions[currentQuestionIndex], {
-            reply_markup: JSON.stringify({
-              inline_keyboard: [
-                [{ text: 'Так', callback_data: 'attachPhotoVideoTrue' }],[{ text: 'Нi', callback_data: 'attachPhotoVideoFalse' }]
-              ],
-            }),
-          })
+         
+          break;
     }
-        
-          
         } else {
           state = 'normal';
           currentQuestionIndex = 0;
@@ -291,23 +290,16 @@ const options = {
               state = 'uploadPhotoVideoHome';
               await bot.sendMessage(chatId, 'Будь ласка, завантажте своє фото або відео');
               break;
-            case 'attachPhotoVideoTrue':
-             await bot.sendMessage(chatId, 'Завантажте фото/відео матеріал вашої розповіді', {
-              reply_markup: JSON.stringify({
-                inline_keyboard: [
-                  [{ text: 'Завантажити', callback_data: 'uploadPhotoVideoStory' }],
-                ],
-              }),
-            }
-
-             );
-              isPhotoVideoUploaded = true;
+            case 'trueMedia':
+              currentQuestionIndex++
+              state = 'trueMedia';
+             await bot.sendMessage(chatId, questions[currentQuestionIndex]);
               break;
-            case 'attachPhotoVideoFalse':
-              state = 'attachPhotoVideoFalse';
+            case 'falseMedia':
+              state = 'falseMedia';
               currentQuestionIndex = 0;
               isPhotoVideoUploaded = false;
-             await bot.sendMessage(chatId, 'Дякуємо, що взяли участь у проєкті "Мій Дім"!');
+              await bot.sendMessage(chatId, 'Дякуємо, що взяли участь у проєкті "Мій Дім"!');
               break;
             case 'uploadPhotoVideoYes':
               state = 'uploadPhotoVideoYes';
