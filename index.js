@@ -7,15 +7,17 @@ const token = '5824459149:AAEP4itIl_IHBs-ncL9chNMUKXscZfg1Y84';
 const SPREADSHEET_ID = '1PHRkmlfbSWIqsSUxZWmRydSsw0dx_AURqBh1T69ba5k';
 const SERVICE_ACCOUNT_KEY_FILE = './creds.json';
 
-const RangeName = 'Sheet1!A2:A200';
-const RangeSocial = 'Sheet1!B2:B200';
-const RangeCity = 'Sheet1!C2:C200';
-const RangeAsociation = 'Sheet1!D2:D200';
-const RangePhotoAsociation = 'Sheet1!E2:E200';
-const RangeShortDescribe = 'Sheet1!F2:F200';
-const RangeAdditionalPhoto = 'Sheet1!G2:G200';
-const RangePhotoStory = 'Sheet1!H2:H200';
-const RangeAgreement = 'Sheet1!I2:I200';
+const RangeName = 'Sheet1!A2+1';
+const RangeSocial = 'Sheet1!B2';
+const RangeCity = 'Sheet1!C2';
+const RangeAsociation = 'Sheet1!D2';
+const RangePhotoAsociation = 'Sheet1!E2';
+const RangeShortDescribe = 'Sheet1!F2';
+const RangeAdditionalPhoto = 'Sheet1!G2';
+const RangePhotoStory = 'Sheet1!H2';
+const RangeAgreement = 'Sheet1!I2';
+
+let RangeIncrement = 2;
 
 const sheets = google.sheets('v4');
 
@@ -43,7 +45,7 @@ let state = 'normal';
 const options = {
     reply_markup: JSON.stringify({
       inline_keyboard: [
-        [{text: 'Залишити данні', callback_data: 'input'}, ],
+        [{text: '<<Залишити данні>>', callback_data: 'input'}, ],
       ],
     }),
     parse_mode: "HTML"
@@ -93,6 +95,27 @@ const options = {
       bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении текста в Google Sheets.');
     }
   }
+
+  async function saveBoolToSheets(range, jwtClient, bool, bot) {
+    
+    const row = [bool];
+    const request = {
+    spreadsheetId: SPREADSHEET_ID,
+    range: range,
+    valueInputOption: 'USER_ENTERED',
+    resource: {
+    values: [row],
+    },
+    auth: jwtClient,
+    };
+    try {
+      const response = await sheets.spreadsheets.values.append(request);
+    } catch (error) {
+      console.error(error);
+      bot.sendMessage(msg.chat.id, 'Произошла ошибка при добавлении булевого значения в Google Sheets.');
+    }
+  }
+  
   
   async function start ()  {
     const bot = new TelegramApi(token, {polling: true})
@@ -147,9 +170,17 @@ const options = {
           userData.push(msg.photo || msg.video);
           state = 'normal';
           bot.on('photo', async (msg) => {
-            savePhotoToSheets(msg, RangePhotoAsociation, jwtClient, bot);
+            await savePhotoToSheets(msg, `Sheet1!E${RangeIncrement}`, jwtClient, bot);
         });
-        return bot.sendMessage(chatId, questions[currentQuestionIndex], options);
+        // console.log(`${currentQuestionIndex} err`);
+        return bot.sendMessage(chatId, questions[currentQuestionIndex], {
+          
+          reply_markup: JSON.stringify({
+           inline_keyboard: [
+             [{ text: 'Натиснiть <<Залишиити даннi>>', callback_data: 'input' }]
+           ],
+         }),
+       }); // options
         } else {
           return bot.sendMessage(chatId, 'Будь ласка, завантажте фото або відео');
         }
@@ -160,28 +191,68 @@ const options = {
           userData.push(msg.photo || msg.video);
           currentQuestionIndex++;
           state = 'normal';
+          console.log(`err`);
           bot.on('photo', async (msg) => {
-            savePhotoToSheets(msg, RangePhotoStory, jwtClient, bot);
+            console.log(RangeIncrement);
+            console.log(currentQuestionIndex);
+            await savePhotoToSheets(msg, `Sheet1!H${RangeIncrement}`, jwtClient, bot);
+            saveBoolToSheets(`Sheet1!G${RangeIncrement}`, jwtClient, true, bot)
         });
-          return bot.sendMessage(chatId, questions[currentQuestionIndex]);
+          return bot.sendMessage(chatId, questions[currentQuestionIndex], {
+            reply_markup: JSON.stringify({
+              inline_keyboard: [
+                [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoYes' }]
+              ],
+            }),
+          });
         } else {
           return bot.sendMessage(chatId, 'Будь ласка, завантажте фото або відео', );
         }
   
       }
 
+      // if (state === 'trueMedia') {
+      //   currentQuestionIndex++;
+      //   state = 'normal';
+      //   console.log(currentQuestionIndex)
+      //   saveBoolToSheets(`Sheet1!G${RangeIncrement}`, jwtClient, true, bot)
+      //   console.log(`zalupa`)
+      //   return bot.sendMessage(chatId, questions[currentQuestionIndex], {
+         
+      //     reply_markup: JSON.stringify({
+      //      inline_keyboard: [
+      //        [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
+      //      ],
+      //    }),
+      //  });
+      // } 
+
       if (state === 'falseMedia') {
         state = 'normal';
-        bot.sendMessage(chatId, "Окей, поверніться до початку командою /start");
-      
+       await saveBoolToSheets(`Sheet1!G${RangeIncrement}`, jwtClient, false, bot)
+       return bot.sendMessage(chatId, "Окей, поверніться до початку командою /start");
+       
+      } 
+
+      if (state === 'uploadPhotoVideoNo') {
+        state = 'normal';
+        await saveBoolToSheets(`Sheet1!I${RangeIncrement}`, jwtClient, false, bot)
+        return bot.sendMessage(chatId, "Окей, поверніться до початку командою /start");
+        
+      }
+      if (state === 'uploadPhotoVideoYes') {
+        state = 'normal';
+        await saveBoolToSheets(`Sheet1!I${RangeIncrement}`, jwtClient, true, bot)
+       return bot.sendMessage(chatId, "Окей, поверніться до початку командою /start"); 
+        
       }
   
       if (state === 'normal') {
         
-        console.log(`Пользователь ${msg.from.username} ввел: ${text}`);
+        // console.log(`Пользователь ${msg.from.username} ввел: ${text}`);
         return bot.sendMessage(chatId, 'Я вас не розумiю');
       } else {
-        console.log(`Пользователь ${msg.from.username} ввел: ${text}`);
+        // console.log(`Пользователь ${msg.from.username} ввел: ${text}`);
     
         userData.push(text);
         currentQuestionIndex++;
@@ -189,24 +260,20 @@ const options = {
           // console.log(currentQuestionIndex);
           switch (currentQuestionIndex) {
             case 1: //saveTextToSheets, RangeName
-            console.log(`${currentQuestionIndex} 1`);
               await bot.sendMessage(chatId, questions[1])
-              saveTextToSheets(RangeName, jwtClient, msg, bot)
+              saveTextToSheets(`Sheet1!A${RangeIncrement}`, jwtClient, msg, bot)
           break;
           case 2: //RangeSocial, 
-          console.log(`${currentQuestionIndex} 2`);
             await bot.sendMessage(chatId, questions[2])
-            saveTextToSheets(RangeSocial, jwtClient, msg, bot)
+            saveTextToSheets(`Sheet1!B${RangeIncrement}`, jwtClient, msg, bot)
         break;
 
         case 3: //RangeCity
-        console.log(`${currentQuestionIndex} 3`);
           await bot.sendMessage(chatId, questions[3])
-          saveTextToSheets(RangeCity, jwtClient, msg, bot)
+          saveTextToSheets(`Sheet1!C${RangeIncrement}`, jwtClient, msg, bot)
         break;
 
         case 4: //RangeAsociation
-        console.log(`${currentQuestionIndex} 4`);
           await bot.sendMessage(chatId, questions[4], {
             reply_markup: JSON.stringify({
               inline_keyboard: [
@@ -214,51 +281,34 @@ const options = {
               ],
             }),
           });
-          saveTextToSheets(RangeAsociation, jwtClient, msg, bot)
+          saveTextToSheets(`Sheet1!D${RangeIncrement}`, jwtClient, msg, bot)
           break;
           case 5:
-          console.log(`${currentQuestionIndex} 5`);
           await bot.sendMessage(chatId, questions[5])
-        
         break; 
 
-        // case 7: //RangeShortDescribe
-        //   console.log(`${currentQuestionIndex} 7`);
-        //   await bot.sendMessage(chatId, questions[9])
-        //   saveTextToSheets(RangeShortDescribe, jwtClient, msg, bot)
-        //   break;
+       
         case 6:
-        console.log(`${currentQuestionIndex} 6`);
           await bot.sendMessage(chatId, questions[6], {
             reply_markup: JSON.stringify({
               inline_keyboard: [
-                [{ text: 'Так', callback_data: 'trueMedia' }],[{ text: 'Нi', callback_data: 'falseMedia' }]
+                [{ text: 'Так', callback_data: 'uploadPhotoVideoStory' }],[{ text: 'Нi', callback_data: 'falseMedia' }]
               ],
             }),
           });
-          saveTextToSheets(RangeShortDescribe, jwtClient, msg, bot)
+          saveTextToSheets(`Sheet1!F${RangeIncrement}`, jwtClient, msg, bot)
           break;
-        case 7:
-          console.log(`${currentQuestionIndex} 8`);
-          await bot.sendMessage(chatId, questions[7], {
-                 reply_markup: JSON.stringify({
-                  inline_keyboard: [
-                    [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
-                  ],
-                }),
-              });
-          break;
-          
-        case 8:
-          console.log(`${currentQuestionIndex} 8`);
-          await bot.sendMessage(chatId, questions[8], {
-                reply_markup: JSON.stringify({
-                  inline_keyboard: [
-                    [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }],
-                  ],
-                }),
-              });
-          break;
+        // case 8:
+        //   await bot.sendMessage(chatId, questions[9], {
+        //     reply_markup: JSON.stringify({
+        //       inline_keyboard: [
+        //         [{ text: 'Так', callback_data: 'uploadPhotoVideoYes' }],[{ text: 'Нi', callback_data: 'uploadPhotoVideoNo' }]
+        //       ],
+        //     }),
+        //   });
+        //   saveTextToSheets(`Sheet1!F${RangeIncrement}`, jwtClient, msg, bot)
+        //   break;
+       
        
         default:
          
@@ -300,27 +350,32 @@ const options = {
               currentQuestionIndex = 0;
               isPhotoVideoUploaded = false;
               await bot.sendMessage(chatId, 'Дякуємо, що взяли участь у проєкті "Мій Дім"!');
+              RangeIncrement++
               break;
             case 'uploadPhotoVideoYes':
               state = 'uploadPhotoVideoYes';
               currentQuestionIndex = 0;
               isPhotoVideoUploaded = false;
               await bot.sendMessage(chatId, 'Дякуємо, що взяли участь у проєкті "Мій Дім"!');
+              RangeIncrement++
               break;
             case 'uploadPhotoVideoNo':
               state = 'uploadPhotoVideoNo';
               currentQuestionIndex = 0;
               isPhotoVideoUploaded = false;
               await bot.sendMessage(chatId, 'Дякуємо, що взяли участь у проєкті "Мій Дім"!');
+              RangeIncrement++
               break;
             case 'uploadPhotoVideoStory':
+              currentQuestionIndex++
               state = 'uploadPhotoVideoStory';
-              await bot.sendMessage(chatId, 'Будь ласка, завантажте своє фото або відео');
+              await  bot.sendMessage(chatId, questions[currentQuestionIndex], );
               break;
               
         }
        
     })
+   
   }
   
   start();
